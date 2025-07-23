@@ -417,6 +417,8 @@
                                     showSection('parentSection');
                                     loadParentNotifications();
                                 }
+                                // Run cleanup after successful authentication and role determination
+                                cleanupOldRecords();
                             } else {
                                 showMessage("User role not found. Please contact admin.", "error");
                                 signOut(auth); // Log out if role is missing
@@ -677,8 +679,7 @@
                                     await remove(ref(db, `artifacts/${currentAppId}/students/${studentIdToDelete}`));
                                     // Also remove attendance records for this student
                                     await remove(ref(db, `artifacts/${currentAppId}/attendance_records/${studentIdToDelete}`));
-                                    // And notifications related to this student (more complex, might need to iterate through parents)
-                                    // For simplicity, we'll just delete the student and their attendance.
+                                    // And notifications related to this student (more complex, might not be necessary for this demo)
                                     showMessage(`Student ${studentIdToDelete} and their attendance records deleted.`);
                                 } catch (error) {
                                     console.error("Error deleting student:", error);
@@ -700,7 +701,8 @@
         let lastScannedStudentName = null;
 
         function startQrScanner() {
-            if (html5QrCode && html5QrCode.isScanning) { // Corrected property name
+            // Corrected property name: html5QrCode.isScanning
+            if (html5QrCode && html5QrCode.isScanning) { 
                 return;
             }
             html5QrCode = new Html5Qrcode("qr-reader");
@@ -734,7 +736,8 @@
         }
 
         function stopQrScanner() {
-            if (html5QrCode && html5QrCode.isScanning) { // Corrected property name
+            // Corrected property name: html5QrCode.isScanning
+            if (html5QrCode && html5QrCode.isScanning) { 
                 html5QrCode.stop().then(() => {
                     console.log("QR scanner stopped.");
                     document.getElementById('qr-reader-results').textContent = 'No QR Code Scanned';
@@ -962,7 +965,13 @@
         async function cleanupOldRecords() {
             console.log("Running 15-day data cleanup...");
             const fifteenDaysAgo = Date.now() - (15 * 24 * 60 * 60 * 1000); // 15 days in milliseconds
-            const currentAppId = auth.app.options.projectId; // Get projectId from initialized app
+            
+            // Ensure auth is initialized before trying to access auth.app.options.projectId
+            if (!auth || !auth.app || !auth.app.options || !auth.app.options.projectId) {
+                console.warn("Firebase auth not fully initialized for cleanupOldRecords. Skipping cleanup for now.");
+                return;
+            }
+            const currentAppId = auth.app.options.projectId; 
 
             // Clean up attendance records
             const attendanceRef = ref(db, `artifacts/${currentAppId}/attendance_records`);
@@ -997,9 +1006,6 @@
             }
             console.log("15-day data cleanup complete.");
         }
-
-        // Run cleanup on app load (client-side)
-        window.addEventListener('load', cleanupOldRecords);
 
         // Initialize Firebase on window load
         window.onload = initializeFirebase;
