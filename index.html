@@ -474,9 +474,6 @@
         });
 
         // --- Admin Functions ---
-        // The appId is now derived from the firebaseConfig directly
-        // const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id'; // This line is no longer needed
-
         // Create User
         document.getElementById('createUserForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -491,7 +488,6 @@
                 const newUserId = userCredential.user.uid;
 
                 // Save user role and details in Realtime DB
-                // Ensure appId is available from initializeFirebase scope
                 const currentAppId = auth.app.options.projectId; // Get projectId from initialized app
                 await set(ref(db, `artifacts/${currentAppId}/users/${newUserId}`), {
                     email: email,
@@ -704,7 +700,7 @@
         let lastScannedStudentName = null;
 
         function startQrScanner() {
-            if (html5QrCode && html5QrCode.is  scanning) { // Check if scanner is already active
+            if (html5QrCode && html5QrCode.isScanning) { // Corrected property name
                 return;
             }
             html5QrCode = new Html5Qrcode("qr-reader");
