@@ -302,60 +302,90 @@
                 db = getDatabase(app);
                 auth = getAuth(app);
 
-                // Authenticate with custom token or anonymously
+                let authAttempted = false;
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
+                    try {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                        authAttempted = true;
+                    } catch (tokenError) {
+                        console.warn("Custom token sign-in failed (expected in some Canvas scenarios):", tokenError.message);
+                        // Fallback to anonymous sign-in if custom token fails
+                        try {
+                            await signInAnonymously(auth);
+                            authAttempted = true;
+                        } catch (anonError) {
+                            console.error("Anonymous sign-in also failed:", anonError.message);
+                            showMessage(`Authentication failed: ${anonError.message}`, "error");
+                        }
+                    }
                 } else {
-                    await signInAnonymously(auth);
+                    // If no custom token (e.g., on GitHub Pages), try anonymous sign-in
+                    try {
+                        await signInAnonymously(auth);
+                        authAttempted = true;
+                    } catch (anonError) {
+                        console.error("Anonymous sign-in failed:", anonError.message);
+                        showMessage(`Authentication failed: ${anonError.message}`, "error");
+                    }
                 }
 
-                onAuthStateChanged(auth, async (user) => {
-                    if (user) {
-                        userId = user.uid;
-                        console.log("User authenticated:", userId);
-                        // Fetch user role from Realtime DB
-                        const userRef = ref(db, `artifacts/${appId}/users/${userId}`);
-                        onValue(userRef, (snapshot) => {
-                            const userData = snapshot.val();
-                            if (userData && userData.role) {
-                                userRole = userData.role;
-                                console.log("User role:", userRole);
-                                showMessage(`Logged in as ${userRole}.`);
-                                updateNavigation(userRole);
-                                hideLoading();
-                                // Redirect to appropriate section
-                                if (userRole === 'admin') {
-                                    showSection('adminSection');
-                                    loadUsers();
-                                    loadStudents();
-                                    loadParentsForStudentAssignment();
-                                } else if (userRole === 'scanner') {
-                                    showSection('scannerSection');
-                                    startQrScanner();
-                                    loadOfflineScans();
-                                } else if (userRole === 'parent') {
-                                    showSection('parentSection');
-                                    loadParentNotifications();
+                // Proceed with onAuthStateChanged only if an authentication attempt was made and potentially succeeded
+                if (authAttempted) {
+                    onAuthStateChanged(auth, async (user) => {
+                        if (user) {
+                            userId = user.uid;
+                            console.log("User authenticated with UID:", userId); // Added specific logging
+                            // Fetch user role from Realtime DB
+                            const userRef = ref(db, `artifacts/${appId}/users/${userId}`);
+                            onValue(userRef, (snapshot) => {
+                                const userData = snapshot.val();
+                                if (userData && userData.role) {
+                                    userRole = userData.role;
+                                    console.log("User role found:", userRole); // Added specific logging
+                                    showMessage(`Logged in as ${userRole}.`);
+                                    updateNavigation(userRole);
+                                    hideLoading();
+                                    // Redirect to appropriate section
+                                    if (userRole === 'admin') {
+                                        showSection('adminSection');
+                                        loadUsers();
+                                        loadStudents();
+                                        loadParentsForStudentAssignment();
+                                    } else if (userRole === 'scanner') {
+                                        showSection('scannerSection');
+                                        startQrScanner();
+                                        loadOfflineScans();
+                                    } else if (userRole === 'parent') {
+                                        showSection('parentSection');
+                                        loadParentNotifications();
+                                    }
+                                    cleanupOldRecords();
+                                } else {
+                                    console.warn("User data or role not found for authenticated UID:", userId, "Logging out."); // Added specific logging
+                                    showMessage("User role not found. Please contact admin or log in with a registered account.", "error"); // More descriptive message
+                                    signOut(auth); // Log out if role is missing
+                                    // After signOut, onAuthStateChanged will fire again with user = null,
+                                    // leading to the else block below.
                                 }
-                                // Run cleanup after successful authentication and role determination
-                                cleanupOldRecords();
-                            } else {
-                                showMessage("User role not found. Please contact admin.", "error");
-                                signOut(auth); // Log out if role is missing
-                            }
-                        }, {
-                            onlyOnce: false // Listen for changes to user data
-                        });
-                    } else {
-                        userId = null;
-                        userRole = null;
-                        console.log("User logged out or not authenticated.");
-                        updateNavigation(null);
-                        hideLoading();
-                        showSection('loginSection');
-                        stopQrScanner(); // Stop scanner if logged out
-                    }
-                });
+                            }, {
+                                onlyOnce: false // Listen for changes to user data
+                            });
+                        } else {
+                            userId = null;
+                            userRole = null;
+                            console.log("User is NOT authenticated. Displaying login section."); // Added specific logging
+                            updateNavigation(null);
+                            hideLoading();
+                            showSection('loginSection');
+                            stopQrScanner(); // Stop scanner if logged out
+                        }
+                    });
+                } else {
+                    // If no authentication attempt succeeded, ensure login section is shown
+                    hideLoading();
+                    showSection('loginSection');
+                }
+
             } catch (error) {
                 console.error("Error initializing Firebase or authentication:", error);
                 showMessage(`Firebase init error: ${error.message}`, "error");
@@ -828,7 +858,8 @@
                 try {
                     await saveAttendanceToFirebase(record);
                     successCount++;
-                } catch (error) {
+                }
+                catch (error) {
                     console.error("Failed to sync offline record:", record, error);
                     // Keep failed records for retry or manual intervention
                 }
@@ -934,7 +965,7 @@
         window.confirm = (message) => {
             return new Promise((resolve) => {
                 const modal = document.createElement('div');
-                modal.className = 'fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center z-50';
+                modal.className = 'fixed inset-0 bg-gray-600 bg-opacity50 flex justify-center items-center z-50';
                 modal.innerHTML = `
                     <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full">
                         <p class="text-lg font-semibold mb-4">${message}</p>
