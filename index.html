@@ -8,92 +8,12 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Inter Font -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Custom Stylesheet -->
+    <link rel="stylesheet" href="/style.css">
     <!-- HTML5-QRCode for scanning -->
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <!-- PWA Manifest -->
     <link rel="manifest" href="/manifest.json">
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6;
-            color: #374151;
-        }
-        .container {
-            max-width: 100%;
-            margin: 0 auto;
-            padding: 1rem;
-        }
-        .section {
-            display: none; /* Hidden by default */
-        }
-        .section.active {
-            display: block; /* Shown when active */
-        }
-        .btn {
-            @apply px-4 py-2 rounded-md font-medium transition duration-300;
-        }
-        .btn-primary {
-            @apply bg-blue-600 text-white hover:bg-blue-700 shadow-md;
-        }
-        .btn-secondary {
-            @apply bg-gray-200 text-gray-800 hover:bg-gray-300;
-        }
-        .input-field {
-            @apply w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500;
-        }
-        .card {
-            @apply bg-white p-6 rounded-lg shadow-md mb-4;
-        }
-        .message-box {
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: #4CAF50;
-            color: white;
-            padding: 15px 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            z-index: 1000;
-            display: none;
-            opacity: 0;
-            transition: opacity 0.5s ease-in-out;
-        }
-        .message-box.error {
-            background-color: #f44336;
-        }
-        .message-box.show {
-            display: block;
-            opacity: 1;
-        }
-        /* Style for QR scanner video feed */
-        #qr-reader {
-            width: 100%;
-            max-width: 500px;
-            margin: 0 auto;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            overflow: hidden;
-        }
-        #qr-reader__dashboard_section_csr {
-            display: none !important; /* Hide the dashboard section from html5-qrcode */
-        }
-        #qr-reader-results {
-            text-align: center;
-            margin-top: 1rem;
-            font-weight: 600;
-        }
-        #qr-reader video {
-            width: 100% !important;
-            height: auto !important;
-            border-radius: 8px;
-        }
-        @media (min-width: 768px) {
-            .container {
-                max-width: 900px;
-            }
-        }
-    </style>
 </head>
 <body class="min-h-screen flex flex-col">
     <!-- Message Box -->
