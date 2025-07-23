@@ -13,8 +13,8 @@ const urlsToCache = [
     'https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js',
     'https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js',
     'https://unpkg.com/html5-qrcode',
-    '/assets/icons/icon-192x192.png',
-    '/assets/icons/icon-512x512.png'
+    '/assets/icons/entrix192.png',
+    '/assets/icons/entrix512.png'
 ];
 
 self.addEventListener('install', event => {
