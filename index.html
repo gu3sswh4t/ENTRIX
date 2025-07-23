@@ -10,6 +10,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-functions-compat.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
 </head>
 <body>
@@ -34,15 +35,45 @@
 
         <div id="admin-dashboard" class="dashboard-section" style="display:none;">
             <h2>Admin Dashboard</h2>
+
             <h3>Manage Users</h3>
-            <div id="user-management">
-                </div>
+            <div id="user-management" class="admin-subsection">
+                <h4>Add New User</h4>
+                <form id="add-user-form">
+                    <input type="email" id="new-user-email" placeholder="Email" required>
+                    <input type="password" id="new-user-password" placeholder="Password" required>
+                    <select id="new-user-role" required>
+                        <option value="">Select Role</option>
+                        <option value="admin">Admin</option>
+                        <option value="scanner">Scanner</option>
+                        <option value="parent">Parent</option>
+                    </select>
+                    <input type="text" id="new-user-student-id" placeholder="Student ID (for Parent)" style="display: none;">
+                    <button type="submit">Add User</button>
+                    <p id="add-user-status"></p>
+                </form>
+
+                <h4>Existing Users</h4>
+                <ul id="user-list">
+                    <li>Loading users...</li> </ul>
+            </div>
             <h3>Manage Students</h3>
-            <div id="student-management">
-                </div>
+            <div id="student-management" class="dashboard-section" style="display:none;">
+                <h3>Add Student</h3>
+                <form id="add-student-form">
+                    <input type="text" id="student-id" placeholder="Student ID" required>
+                    <input type="text" id="student-name" placeholder="Student Name" required>
+                    <input type="email" id="student-parent-email" placeholder="Parent Email (optional)">
+                    <button type="submit">Add Student</button>
+                </form>
+                <h3>Student List</h3>
+                <ul id="student-list">
+                    </ul>
+            </div>
             <h3>Reports</h3>
-            <div id="admin-reports">
-                </div>
+            <div id="admin-reports" class="dashboard-section" style="display:none;">
+                <p>Reports will go here. (Not yet implemented in detail)</p>
+            </div>
         </div>
 
         <div id="scanner-dashboard" class="dashboard-section" style="display:none;">
