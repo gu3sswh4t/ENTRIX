@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Exam Reviewer App</title>
+    <style>
+        :root {
+            --primary: #818cf8;
+            --primary-dark: #4f46e5;
+            --secondary: #f472b6;
+            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #312e81 100%);
+            --glass: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --text: #ffffff;
+            --text-muted: #cbd5e1;
+            --success: #34d399;
+            --error: #f87171;
+            --modal-bg: rgba(30, 41, 59, 0.95);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: var(--bg-gradient);
+            color: var(--text);
+            height: 100dvh;
+            width: 100vw;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #app {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        @media (min-width: 600px) {
+            #app {
+                max-width: 480px;
+                height: 90vh;
+                border-radius: 28px;
+                background: rgba(15, 23, 42, 0.4);
+                box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+                border: 1px solid var(--glass-border);
+                backdrop-filter: blur(24px);
+            }
+        }
+
+        header {
+            flex-shrink: 0;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--glass-border);
+            z-index: 20;
+        }
+
+        h1 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .install-btn {
+            background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .install-btn:hover {
+            background: rgba(255,255,255,0.2);
+            transform: translateY(-1px);
+        }
+
+        .progress-container {
+            flex-shrink: 0;
+            height: 4px;
+            background: rgba(255,255,255,0.05);
+            width: 100%;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--secondary), var(--primary));
+            width: 0%;
+            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 0 10px rgba(236, 72, 153, 0.5);
+        }
+
+        .screen {
+            display: none;
+            flex: 1;
+            flex-direction: column;
+            height: 100%;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        .scroll-content {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 24px;
+            padding-bottom: 140px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .scroll-content::-webkit-scrollbar {
+            display: none;
+        }
+
+        .center-content {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            height: 100%;
+            padding: 30px;
+        }
+
+        .logo-circle {
+            width: 90px;
+            height: 90px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            margin-bottom: 24px;
+            box-shadow: 0 0 30px rgba(99, 102, 241, 0.4);
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+
+        .question-card {
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 24px;
+            margin-bottom: 24px;
+            backdrop-filter: blur(12px);
+        }
+
+        .q-number {
+            color: var(--secondary);
+            font-size: 0.8rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 12px;
+            display: block;
+        }
+
+        .q-text {
+            font-size: 1.2rem;
+            line-height: 1.6;
+            font-weight: 600;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .options-grid {
+            display: grid;
+            gap: 12px;
+            width: 100%;
+        }
+
+        .option-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            padding: 18px 20px;
+            border-radius: 16px;
+            color: rgba(255,255,255,0.9);
+            text-align: left;
+            font-size: 1rem;
+            line-height: 1.4;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: flex-start;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .option-btn strong {
+            margin-right: 14px;
+            color: var(--primary);
+            font-weight: 700;
+        }
+
+        .option-btn:active {
+            transform: scale(0.98);
+        }
+
+        .option-btn.correct {
+            background: rgba(52, 211, 153, 0.2);
+            border-color: var(--success);
+            color: #ecfdf5;
+            box-shadow: 0 0 15px rgba(52, 211, 153, 0.2);
+        }
+        
+        .option-btn.wrong {
+            background: rgba(248, 113, 113, 0.2);
+            border-color: var(--error);
+            color: #fef2f2;
+            animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+
+        .bottom-nav {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            padding: 24px;
+            padding-bottom: 34px;
+            background: linear-gradient(to top, #0f172a 70%, transparent 100%);
+            display: flex;
+            justify-content: center;
+            z-index: 50;
+            pointer-events: none; 
+        }
+
+        .bottom-nav button {
+            pointer-events: auto;
+        }
+
+        .primary-btn {
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            padding: 16px 0;
+            border-radius: 50px;
+            font-size: 1.05rem;
+            font-weight: 700;
+            width: 100%;
+            max-width: 320px;
+            cursor: pointer;
+            box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .primary-btn:active {
+            transform: scale(0.96);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .score-display {
+            font-size: 4rem;
+            font-weight: 800;
+            margin-bottom: 8px;
+            background: linear-gradient(to right, var(--success), var(--primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(12px);
+            z-index: 200;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.open {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .modal {
+            background: rgba(30, 41, 59, 0.8);
+            width: 85%;
+            max-width: 380px;
+            padding: 32px 24px;
+            border-radius: 24px;
+            border: 1px solid rgba(255,255,255,0.15);
+            text-align: center;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+            transform: scale(0.9);
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .modal-overlay.open .modal {
+            transform: scale(1);
+        }
+        
+        .modal h3 { 
+            margin-bottom: 12px; 
+            font-size: 1.4rem;
+            color: white;
+        }
+
+        .modal p { 
+            color: var(--text-muted); 
+            margin-bottom: 24px; 
+            font-size: 1rem; 
+            line-height: 1.5; 
+        }
+
+        .modal-icon {
+            font-size: 3rem;
+            margin-bottom: 16px;
+            display: block;
+        }
+
+        .modal-btn {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: background 0.2s;
+        }
+
+        .modal-btn:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .modal-btn.highlight {
+            background: var(--primary);
+            border: none;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="app">
+        <header>
+            <h1>Exam Reviewer</h1>
+            <button class="install-btn" onclick="openInstallModal()">
+                <span>Install App</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            </button>
+        </header>
+
+        <div class="progress-container">
+            <div class="progress-bar" id="progress-bar"></div>
+        </div>
+
+        <div id="start-screen" class="screen active">
+            <div class="center-content">
+                <div class="logo-circle">📝</div>
+                <h2 style="margin-bottom: 12px; font-size: 1.8rem;">Ready to Ace It?</h2>
+                <p style="color: var(--text-muted); margin-bottom: 40px; line-height: 1.6;">
+                    40 Essential Questions<br>Web 3.0 • Privacy • Excel • Design
+                </p>
+                <button class="primary-btn" onclick="startQuiz()">Start Quiz 🚀</button>
+            </div>
+        </div>
+
+        <div id="quiz-screen" class="screen">
+            <div class="scroll-content">
+                <div class="question-card">
+                    <span class="q-number" id="q-number">Question 1</span>
+                    <p class="q-text" id="q-text"></p>
+                </div>
+                <div class="options-grid" id="options-container"></div>
+            </div>
+            
+            <div class="bottom-nav">
+                <button id="next-btn" class="primary-btn hidden" onclick="nextQuestion()">Next Question ➜</button>
+            </div>
+        </div>
+
+        <div id="result-screen" class="screen">
+            <div class="center-content">
+                <div class="logo-circle" style="background: linear-gradient(135deg, var(--success), var(--primary)); margin-bottom: 20px;">🏆</div>
+                <div class="score-display" id="final-score">0%</div>
+                <p style="color: var(--text-muted); margin-bottom: 10px; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px;">Final Score</p>
+                <p id="result-msg" style="margin-bottom: 40px; font-size: 1.3rem; color: white;">Great job!</p>
+                <button class="primary-btn" onclick="restartQuiz()">Review Again ↺</button>
+            </div>
+        </div>
+
+        <div id="install-modal" class="modal-overlay">
+            <div class="modal">
+                <span class="modal-icon">📲</span>
+                <h3>Install App</h3>
+                <p><strong>iOS (Safari):</strong> Tap 'Share' <svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M12 1L8 5H11V14H13V5H16L12 1ZM4 10V21H20V10H4Z"/></svg> then 'Add to Home Screen' <svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M11 11V5H13V11H19V13H13V19H11V13H5V11H11Z"/></svg></p>
+                <p><strong>Android (Chrome):</strong> Tap the menu (⋮) then 'Add to Home Screen'.</p>
+                <button class="modal-btn" onclick="closeInstallModal()">Got it</button>
+            </div>
+        </div>
+
+        <div id="feedback-modal" class="modal-overlay">
+            <div class="modal" style="border-color: rgba(248, 113, 113, 0.4);">
+                <span class="modal-icon">💡</span>
+                <h3 style="color: #fca5a5;">Not quite right</h3>
+                <p id="feedback-text" style="color: #e2e8f0; font-weight: 500;">The correct answer is Web 2.0</p>
+                <p style="font-size: 0.9rem; margin-top: -10px; opacity: 0.7;">Please select the correct option to continue.</p>
+                <button class="modal-btn highlight" onclick="closeFeedbackModal()">Try Again</button>
+            </div>
+        </div>
+
+    </div>
+
+<script>
+    const questions = [
+        { q: "You are accessing a website that allows you to read content but does not provide any option to comment, create an account, or interact with other users. Which specific version of the Web does this site represent?", options: ["Web 1.0", "Web 2.0", "Web 3.0", "Web 4.0"], correct: 0 },
+        { q: "A student needs to find a platform specifically designed for uploading and viewing video content for a film project. Which platform is the single most appropriate choice for this specific task?", options: ["Twitter", "Spotify", "YouTube", "WordPress"], correct: 2 },
+        { q: "A marketing team wants to launch a campaign across three different types of social media: Microblogging, Social Networking, and Media Sharing. Which selection correctly lists one platform for each of these three specific categories?", options: ["Google, Yahoo, Bing", "Word, Excel, PowerPoint", "Twitter, Facebook, Instagram", "Firefox, Chrome, Safari, Opera mini"], correct: 2 },
+        { q: "A user is deciding between using a static HTML website (Web 1.0) or a dynamic CMS (Web 2.0) for a community forum. Why is the Web 2.0 approach better suited for a community forum?", options: ["It loads faster", "It stops fake news", "It designs the logo", "It connects people through interaction"], correct: 3 },
+        { q: "A local government wants to create a 'Smart City' portal that not only displays news but predicts traffic patterns and personalizes services for citizens using AI. How would you conceptualize the development of this portal using Web 3.0 principles?", options: ["List numbers", "Make a Facebook page", "Print flyers with QR codes", "Design a semantic system that predicts user needs"], correct: 3 },
+        { q: "You received an email asking for your password to 'verify your account.' What is the specific term for this type of cyber threat?", options: ["Phishing", "Trolling", "Hacking", "Spamming"], correct: 0 },
+        { q: "You are typing a comment on a classmate's post. You want to avoid shouting at them. Which specific keyboard practice should you avoid ensuring you are not perceived as shouting?", options: ["Using emojis", "Checking spelling", "Typing in ALL CAPS", "Using proper punctuation"], correct: 2 },
+        { q: "A student wants to secure their social media account. Which list contains three independent but correct steps to secure an account?", options: ["Share password, write it down, use dates", "Use public PC, leave open, disable virus app", "Strong password, two-factor auth, privacy settings", "Delete account, make new a new one, never post photos"], correct: 2 },
+        { q: "A user is debating whether to post a photo of their friend's driver's license on social media to celebrate their birthday. Why is this action considered a violation of data privacy ethics?", options: ["The photo is blurry", "The friend looks bad", "It costs money to post", "It exposes sensitive ID data"], correct: 3 },
+        { q: "You are comparing 'Copyright Infringement' and 'Plagiarism' in the context of a school research paper. How do these two concepts relate to each other in this context?", options: ["They are exactly the same thing", "Plagiarism applies to images only", "Plagiarism is allowed if you change fonts", "Plagiarism is dishonesty; Copyright is legal theft"], correct: 3 },
+        { q: "You need to search for a phrase in Google exactly as it is written. Which single symbol should you wrap around the phrase?", options: ['Quotation Marks " "', 'Parentheses ( )', 'Asterisks * *', 'Hashtags # #'], correct: 0 },
+        { q: "You are checking the URL of a website to see if it is an educational institution. Which specific domain suffix are you looking for?", options: [".edu", ".net", ".gov", ".com"], correct: 0 },
+        { q: "A student gathers sources for a thesis and needs to verify the credibility of a website. Which list of criteria corresponds to the standard C.R.A.P. test for evaluation?", options: ["Creative, Real, Artistic, Public", "Cost, Rating, Access, Popularity", "Currency, Relevance, Authority, Purpose", "Color, Resolution, Animation, Authority, Creative"], correct: 2 },
+        { q: "A student finds two articles on climate change: one from 2005 and one from 2024. Applying the principle of 'Currency', why is the 2024 article preferred for a current events report?", options: ["It is shorter to read", "It has more pictures", "It reflects recent findings", "It is older and historic for clearer data accuracy"], correct: 2 },
+        { q: "You are researching a controversial local event where three different news outlets provide conflicting reports. How would you synthesize these sources to find the truth?", options: ["Pick the one you like", "Average the statistics", "Cross-reference facts to find bias", "Choose the most recent, popular, and trendy"], correct: 2 },
+        { q: "You are using Microsoft Word to create form letters. What is the specific tab on the ribbon where you can find the 'Start Mail Merge' button?", options: ["View", "Home", "Insert", "Mailings"], correct: 3 },
+        { q: "You need to add a visual transition between slides in PowerPoint. Which single tab should you click to access these effects?", options: ["Design", "Review", "Transitions", "Animations"], correct: 2 },
+        { q: "You are preparing a list of recipients for a Mail Merge. Which components are required to successfully generate the merged documents?", options: ["Printer and Scanner", "Keyboard and Mouse", "PDF Reader and Browser", "Template and Data Source"], correct: 3 },
+        { q: "You are formatting a research paper in Word. Which selection lists three distinct formatting tools used for organizing text?", options: ["Cut, Copy, Paste", "Save, Open, Close", "Bold, Italic, Underline", "Bullets, Numbers, Indents"], correct: 3 },
+        { q: "You have a choice between copying and pasting a chart from Excel to Word, or 'Linking' the chart. Why is 'Linking' the chart often more efficient for a monthly report?", options: ["It saves clicks", "It allows color changes", "It increases the file size", "It auto-updates when data changes"], correct: 3 },
+        { q: "You are writing an Excel formula to add up numbers in cells A1 through A10. Which specific function is used for this calculation?", options: ["=ADD", "=SUM", "=PLUS", "=TOTAL"], correct: 1 },
+        { q: "You want to find the average grade of a student based on their scores in five subjects. Which specific function should you use?", options: ["=MEAN", "=MIDDLE", "=MEDIAN", "=AVERAGE"], correct: 3 },
+        { q: "You are asked to list the arithmetic operators used in Excel formulas. Which set correctly identifies the symbols for multiplication, division, and exponentiation?", options: ["*, /, ^", "x, ÷, ^", "*, , **", "#, %, &"], correct: 0 },
+        { q: "You notice that when you sort a list of names in Excel, the associated phone numbers in the adjacent column move with the names. Why does Excel behave this way by default?", options: ["It is a glitch", "It is text data", "It sorts columns alone", "It keeps record integrity"], correct: 3 },
+        { q: "You are managing the inventory for a school canteen using Excel. You need a system that automatically alerts you when stock is low. How would you design a solution using Conditional Formatting?", options: ["Delete low rows", "Write 'Low' notes", "Set rule: Red if < 10", "Color cells manually"], correct: 2 },
+        { q: "You are looking at a poster where the text is dark black, and the background is bright yellow. Which specific design principle is being utilized here?", options: ["Contrast", "Proximity", "Alignment", "Repetition"], correct: 0 },
+        { q: "You are aligning text for a formal newspaper column. Which specific text alignment is traditionally used for newspapers?", options: ["Left", "Right", "Center", "Justified"], correct: 3 },
+        { q: "A designer is explaining the 'Rule of Thirds' to a photographer. Which description accurately outlines the steps to apply this rule?", options: ["Blur the background", "Place subject on the horizon", "Place subject on grid intersections", "Center the subject exactly"], correct: 2 },
+        { q: "A flyer has contact information scattered in four different corners of the page. How does this violate the principle of 'Proximity'?", options: ["It wastes space", "It lacks contrast", "It looks too boring", "It scatters related info"], correct: 3 },
+        { q: "You are rebranding a company that wants to appear 'modern, clean, and minimalist.' How would you apply design principles to create a logo that conveys this abstract identity?", options: ["Copy a competitor", "Use a 3D Gothic font", "Use five bright colors", "Use negative space and sans-serif"], correct: 3 },
+        { q: "You want to make the photo darker because it was overexposed. Which specific adjustment tool controls the lightness and darkness?", options: ["Hue", "Brightness", "Sharpen and dark", "Saturation and color"], correct: 1 },
+        { q: "You need to select a specific color range in an image to change it (e.g., changing a red shirt to blue). Which specific selection tool selects pixels based on color similarity?", options: ["Lasso", "Eraser", "Magic Wand", "Marquee Tool"], correct: 2 },
+        { q: "You are teaching a beginner how to do a basic 'retouch' on a portrait. Which list of tools is commonly used for skin retouching?", options: ["Crop, Rotate, Flip", "Text, Gradient, Shape", "Pen, Path, Direct Select", "Healing, Clone Stamp, Blur"], correct: 3 },
+        { q: "You are saving a project file in Photoshop to work on later. Which file formats allow you to save layers?", options: ["PDF, EPS", "GIF, BMP", "PSD, TIFF", "JPG, PNG"], correct: 2 },
+        { q: "You resize a small 200px image to 2000px and it becomes pixelated (blurry/blocky). Why does this quality loss occur with raster images?", options: ["Screen is small", "Image is B&W", "Need 'Save As'", "Pixels can't stretch"], correct: 3 },
+        { q: "You see a chart that uses bars of different lengths to compare quantities. What is the specific name of this chart type?", options: ["Pie Chart", "Bar Chart", "Line Graph", "Scatter Plot"], correct: 1 },
+        { q: "You are creating an infographic to explain a process. Which elements are essential to include?", options: ["Video, music, voice", "Essay, no pics, biblio", "Index, appendix, table", "Title, visuals, min. text"], correct: 3 },
+        { q: "You are designing a billboard for a highway. Why must the text be extremely large and concise compared to a magazine ad?", options: ["It is cheaper", "It is seen at night", "Material is rough", "Viewers move fast"], correct: 3 },
+        { q: "A charity uses a photo of a crying child in their donation campaign. How does this image choice relate to the concept of 'Emotional Appeal'?", options: ["It is decorative", "It proves location", "It triggers empathy", "It shows camera skill"], correct: 2 },
+        { q: "You are asked to create a visual campaign for 'Mental Health Awareness' that avoids clichés like sad faces or brain icons. How would you generate a novel visual metaphor to represent 'Healing'?", options: ["Use a green ribbon", "Use a generic stock photo", "Depict Kintsugi (gold repair)", "Use a doctor’s photo conducting surgery"], correct: 2 }
+    ];
+
+    let currentQuestionIndex = 0;
+    let score = 0;
+    let isLocked = false; 
+    let attemptMadeOnCurrent = false;
+
+    const startScreen = document.getElementById('start-screen');
+    const quizScreen = document.getElementById('quiz-screen');
+    const resultScreen = document.getElementById('result-screen');
+    const questionText = document.getElementById('q-text');
+    const questionNumber = document.getElementById('q-number');
+    const optionsContainer = document.getElementById('options-container');
+    const nextBtn = document.getElementById('next-btn');
+    const progressBar = document.getElementById('progress-bar');
+    const finalScore = document.getElementById('final-score');
+    const resultMsg = document.getElementById('result-msg');
+    const scrollContent = document.querySelector('.scroll-content');
+    const feedbackModal = document.getElementById('feedback-modal');
+    const feedbackText = document.getElementById('feedback-text');
+
+    function startQuiz() {
+        startScreen.classList.remove('active');
+        quizScreen.classList.add('active');
+        currentQuestionIndex = 0;
+        score = 0;
+        loadQuestion();
+    }
+
+    function loadQuestion() {
+        isLocked = false;
+        attemptMadeOnCurrent = false;
+        nextBtn.classList.add('hidden');
+        scrollContent.scrollTop = 0;
+        
+        const currentQ = questions[currentQuestionIndex];
+        questionNumber.textContent = `Question ${currentQuestionIndex + 1}/${questions.length}`;
+        questionText.textContent = currentQ.q;
+        
+        const progress = (currentQuestionIndex / questions.length) * 100;
+        progressBar.style.width = `${progress}%`;
+
+        optionsContainer.innerHTML = '';
+        const letters = ['A', 'B', 'C', 'D'];
+        currentQ.options.forEach((opt, index) => {
+            const btn = document.createElement('button');
+            btn.classList.add('option-btn');
+            btn.innerHTML = `<strong>${letters[index]}</strong> ${opt}`;
+            btn.onclick = () => checkAnswer(index, btn);
+            optionsContainer.appendChild(btn);
+        });
+    }
+
+    function checkAnswer(selectedIndex, btnElement) {
+        if (isLocked) return;
+
+        const currentQ = questions[currentQuestionIndex];
+        const correctIndex = currentQ.correct;
+
+        if (selectedIndex === correctIndex) {
+            // Correct Answer Logic
+            btnElement.classList.add('correct');
+            isLocked = true; // Prevent further clicks on this question
+            
+            // Only add score if they haven't failed this question yet
+            if (!attemptMadeOnCurrent) {
+                score++;
+            }
+
+            // Disable all buttons
+            const allOptions = optionsContainer.children;
+            for (let btn of allOptions) {
+                btn.style.pointerEvents = 'none';
+            }
+
+            nextBtn.classList.remove('hidden');
+            
+            // Auto scroll to next button if off screen
+            setTimeout(() => {
+                scrollContent.scrollTo({ top: scrollContent.scrollHeight, behavior: 'smooth' });
+            }, 100);
+
+        } else {
+            // Wrong Answer Logic
+            btnElement.classList.add('wrong');
+            attemptMadeOnCurrent = true;
+            
+            // Show Feedback Modal
+            const correctOptionText = currentQ.options[correctIndex];
+            feedbackText.innerHTML = `The correct answer is:<br><strong style="color:var(--success); display:block; margin-top:8px;">${correctOptionText}</strong>`;
+            feedbackModal.classList.add('open');
+        }
+    }
+
+    function closeFeedbackModal() {
+        feedbackModal.classList.remove('open');
+    }
+
+    function nextQuestion() {
+        currentQuestionIndex++;
+        if (currentQuestionIndex < questions.length) {
+            loadQuestion();
+        } else {
+            showResults();
+        }
+    }
+
+    function showResults() {
+        quizScreen.classList.remove('active');
+        resultScreen.classList.add('active');
+        progressBar.style.width = '100%';
+
+        const percentage = Math.round((score / questions.length) * 100);
+        finalScore.textContent = `${percentage}%`;
+        
+        if (percentage >= 90) resultMsg.textContent = "Outstanding Performance!";
+        else if (percentage >= 70) resultMsg.textContent = "Great job! You passed.";
+        else if (percentage >= 50) resultMsg.textContent = "Good effort. Keep reviewing.";
+        else resultMsg.textContent = "Don't give up! Try again.";
+    }
+
+    function restartQuiz() {
+        resultScreen.classList.remove('active');
+        startScreen.classList.add('active');
+    }
+
+    function openInstallModal() {
+        document.getElementById('install-modal').classList.add('open');
+    }
+    
+    function closeInstallModal() {
+        document.getElementById('install-modal').classList.remove('open');
+    }
+</script>
+</body>
+</html>
