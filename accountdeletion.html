@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Deletion Request - LeaveLedger</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .btn-spinner,
+        .btn-spinner:after {
+            border-radius: 50%;
+            width: 1.5em;
+            height: 1.5em;
+        }
+        .btn-spinner {
+            font-size: 10px;
+            position: relative;
+            text-indent: -9999em;
+            border-top: 0.2em solid rgba(255, 255, 255, 0.2);
+            border-right: 0.2em solid rgba(255, 255, 255, 0.2);
+            border-bottom: 0.2em solid rgba(255, 255, 255, 0.2);
+            border-left: 0.2em solid #ffffff;
+            transform: translateZ(0);
+            animation: load8 1.1s infinite linear;
+        }
+        @keyframes load8 {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-100">
+
+    <div class="container mx-auto px-4 py-8 sm:py-16 flex items-center justify-center min-h-screen">
+        <div class="w-full max-w-2xl">
+            <header class="text-center mb-8">
+                <h1 class="text-3xl sm:text-4xl font-bold text-slate-800">Account Deletion Request</h1>
+                <p class="mt-2 text-slate-600">Please fill out the form below to request the deletion of your account and associated data.</p>
+            </header>
+
+            <main class="bg-white p-8 sm:p-10 rounded-2xl shadow-lg">
+                <form id="deletion-form" class="space-y-6">
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-slate-700 mb-1">Associated Email Address</label>
+                        <input type="email" id="email" name="email" required class="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 transition" placeholder="e.g., juan.delacruz@deped.gov.ph">
+                    </div>
+
+                    <div>
+                        <label for="name" class="block text-sm font-medium text-slate-700 mb-1">Complete Name</label>
+                        <input type="text" id="name" name="name" required class="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 transition" placeholder="e.g., Juan Dela Cruz">
+                    </div>
+
+                    <div>
+                        <label for="district" class="block text-sm font-medium text-slate-700 mb-1">District</label>
+                        <select id="district" name="district" required class="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-cyan-500 transition">
+                            <option value="" disabled selected>Select your district</option>
+                            <option value="Babak">Babak</option>
+                            <option value="Samal">Samal</option>
+                            <option value="Kaputian">Kaputian</option>
+                            <option value="Talicud">Talicud</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="school" class="block text-sm font-medium text-slate-700 mb-1">School</label>
+                        <input type="text" id="school" name="school" required class="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 transition" placeholder="e.g., Samal National High School">
+                    </div>
+
+                    <div>
+                        <label for="reason" class="block text-sm font-medium text-slate-700 mb-1">Reason for Deletion</label>
+                        <textarea id="reason" name="reason" rows="4" required class="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 transition" placeholder="Please provide a brief reason for your request (e.g., retirement, transfer of station, etc.)"></textarea>
+                    </div>
+
+                    <div class="pt-2">
+                        <button type="submit" id="submit-btn" class="w-full flex items-center justify-center bg-red-600 text-white py-3 rounded-lg hover:bg-red-700 transition-colors duration-300 font-semibold text-base disabled:bg-red-400 disabled:cursor-not-allowed">
+                            <span id="btn-text">Submit Deletion Request</span>
+                            <div id="btn-loader" class="btn-spinner hidden"></div>
+                        </button>
+                    </div>
+                </form>
+            </main>
+
+            <footer class="text-center mt-8 text-sm text-slate-500">
+                <p>Please allow 5-7 working days for the request to be processed. You will be notified via email upon completion.</p>
+            </footer>
+        </div>
+    </div>
+
+    <div id="response-modal" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center px-4 z-50">
+        <div class="bg-white p-8 rounded-lg shadow-xl text-center max-w-sm w-full">
+            <div id="modal-icon-container" class="mx-auto flex items-center justify-center h-12 w-12 rounded-full mb-4">
+            </div>
+            <h2 id="modal-title" class="text-2xl font-bold mb-2 text-slate-800"></h2>
+            <p id="modal-message" class="text-slate-600 mb-6"></p>
+            <button id="modal-close-btn" class="w-full text-white py-2.5 rounded-lg font-semibold transition duration-300">
+                OK
+            </button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
+        import { getDatabase, ref, push, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCENlNdDfFMiCqu0oQs6RHZ3RKSaC1IaU4",
+            authDomain: "accountdeletionrequest.firebaseapp.com",
+            databaseURL: "https://accountdeletionrequest-default-rtdb.firebaseio.com",
+            projectId: "accountdeletionrequest",
+            storageBucket: "accountdeletionrequest.firebasestorage.app",
+            messagingSenderId: "984534155345",
+            appId: "1:984534155345:web:dc048199e5b7515f493870"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        const form = document.getElementById('deletion-form');
+        const submitBtn = document.getElementById('submit-btn');
+        const btnText = document.getElementById('btn-text');
+        const btnLoader = document.getElementById('btn-loader');
+        const responseModal = document.getElementById('response-modal');
+        const modalCloseBtn = document.getElementById('modal-close-btn');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            submitBtn.disabled = true;
+            btnText.classList.add('hidden');
+            btnLoader.classList.remove('hidden');
+
+            const formData = new FormData(form);
+            const requestData = {
+                email: formData.get('email'),
+                name: formData.get('name'),
+                district: formData.get('district'),
+                school: formData.get('school'),
+                reason: formData.get('reason'),
+                status: 'pending',
+                timestamp: serverTimestamp()
+            };
+
+            try {
+                const requestsRef = ref(db, 'deletionRequests');
+                await push(requestsRef, requestData);
+                
+                showModal('success', 'Request Submitted', 'Your account deletion request has been successfully submitted. We will review it and notify you via email.');
+                form.reset();
+
+            } catch (error) {
+                console.error("Error submitting request:", error);
+                showModal('error', 'Submission Failed', 'There was an error submitting your request. Please try again later.');
+            } finally {
+                submitBtn.disabled = false;
+                btnText.classList.remove('hidden');
+                btnLoader.classList.add('hidden');
+            }
+        });
+
+        function showModal(type, title, message) {
+            const modalIconContainer = document.getElementById('modal-icon-container');
+            const modalTitle = document.getElementById('modal-title');
+            const modalMessage = document.getElementById('modal-message');
+
+            modalTitle.textContent = title;
+            modalMessage.textContent = message;
+
+            if (type === 'success') {
+                modalIconContainer.className = 'mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4';
+                modalIconContainer.innerHTML = `<svg class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>`;
+                modalCloseBtn.className = 'w-full bg-green-600 text-white py-2.5 rounded-lg font-semibold hover:bg-green-700 transition duration-300';
+            } else {
+                modalIconContainer.className = 'mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4';
+                modalIconContainer.innerHTML = `<svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>`;
+                modalCloseBtn.className = 'w-full bg-red-600 text-white py-2.5 rounded-lg font-semibold hover:bg-red-700 transition duration-300';
+            }
+
+            responseModal.classList.remove('hidden');
+        }
+
+        modalCloseBtn.addEventListener('click', () => {
+            responseModal.classList.add('hidden');
+        });
+
+    </script>
+</body>
+</html>
