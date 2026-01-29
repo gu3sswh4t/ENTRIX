@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LeaveLedger</title>
+    <link rel="manifest" href="manifest.json">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #334155; }
+        .dark-theme-body { background-color: #0b162c; color: #d1d5db; }
+        .loader { border-top-color: #F97316; -webkit-animation: spinner 1.5s linear infinite; animation: spinner 1.5s linear infinite; }
+        .modal-backdrop { background-color: rgba(0, 0, 0, 0.6); transition: opacity 0.3s ease; }
+        .front-most { z-index: 200 !important; }
+        .modal-content { transition: transform 0.3s ease; }
+        @-webkit-keyframes spinner { 0% { -webkit-transform: rotate(0deg); } 100% { -webkit-transform: rotate(360deg); } }
+        @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes fadeIn-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in-up { animation: fadeIn-up 0.5s ease-out forwards; }
+        @keyframes fadeOut-down { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(20px); } }
+        .animate-fade-out-down { animation: fadeOut-down 0.5s ease-in forwards; }
+        .login-panel-container { background-color: #17253d; border-radius: 10px; box-shadow: 0 14px 28px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22); position: relative; overflow: hidden; width: 100%; max-width: 900px; min-height: 550px; }
+        .form-container { position: absolute; top: 0; height: 100%; transition: all 0.6s ease-in-out; -webkit-backface-visibility: hidden; }
+        .sign-in-container { left: 0; width: 50%; z-index: 2; }
+        .login-panel-container.right-panel-active .sign-in-container { transform: translateX(100%); }
+        .guidelines-container { left: 0; width: 50%; opacity: 0; z-index: 1; }
+        .login-panel-container.right-panel-active .guidelines-container { transform: translateX(100%); opacity: 1; z-index: 5; animation: show 0.6s; }
+        @keyframes show { 0%, 49.99% { opacity: 0; z-index: 1; } 50%, 100% { opacity: 1; z-index: 5; } }
+        .overlay-container { position: absolute; top: 0; left: 50%; width: 50%; height: 100%; overflow: hidden; transition: transform 0.6s ease-in-out; z-index: 100; }
+        .login-panel-container.right-panel-active .overlay-container{ transform: translateX(-100%); }
+        .overlay { background: #C2410C; background: linear-gradient(to right, #F97316, #C2410C); background-repeat: no-repeat; background-size: cover; background-position: 0 0; color: #FFFFFF; position: relative; left: -100%; height: 100%; width: 200%; transform: translateX(0); transition: transform 0.6s ease-in-out; }
+        .login-panel-container.right-panel-active .overlay { transform: translateX(50%); }
+        .overlay-panel { position: absolute; display: flex; align-items: center; justify-content: center; flex-direction: column; padding: 0 40px; text-align: center; top: 0; height: 100%; width: 50%; transform: translateX(0); transition: transform 0.6s ease-in-out; }
+        .overlay-left { transform: translateX(-20%); }
+        .login-panel-container.right-panel-active .overlay-left { transform: translateX(0); }
+        .overlay-right { right: 0; transform: translateX(0); }
+        .login-panel-container.right-panel-active .overlay-right { transform: translateX(20%); }
+        .ghost-btn { background-color: transparent; border: 2px solid #ffffff; color: #ffffff; padding: 12px 45px; border-radius: 25px; font-weight: bold; letter-spacing: 1px; text-transform: uppercase; transition: transform 80ms ease-in, background-color 0.3s; }
+        .ghost-btn:hover { background-color: rgba(255, 255, 255, 0.1); }
+        .ghost-btn:active { transform: scale(0.95); }
+        .form-input { background-color: #0b162c; border: 1px solid #25395d; color: #d1d5db; }
+        .form-input::placeholder { color: #6b7280; }
+        .form-input:focus { outline: none; border-color: #F97316; box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.4); }
+        .animated-btn { transition: transform 100ms ease-out; }
+        .animated-btn:active { transform: scale(0.97); }
+        .logout-animation { animation: logout-shrink 0.4s ease-in-out forwards; }
+        @keyframes logout-shrink { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(0); opacity: 0; } }
+        @media (max-width: 768px) { .login-panel-container { min-height: auto; max-width: 450px; } .overlay-container { display: none; } .form-container { width: 100%; position: relative; padding: 40px 0; } .guidelines-container { opacity: 1; z-index: 1; transform: translateX(0); display: none; } .sign-in-container { transform: translateX(0); } .login-panel-container.right-panel-active .guidelines-container { transform: translateX(0); display: block; animation: none; } .login-panel-container.right-panel-active .sign-in-container { transform: translateX(0); display: none; } }
+        .step { transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out; }
+        .step.hidden { display: none; opacity: 0; transform: translateX(10px); }
+        .step.active-step { display: block; opacity: 1; transform: translateX(0); }
+        .dock-item { transition: transform 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+        .spark { position: absolute; pointer-events: none; background: #F97316; border-radius: 50%; width: 6px; height: 6px; z-index: 9999; animation: spark-animation 600ms ease-out forwards; }
+        @keyframes spark-animation { 0% { transform: scale(1); opacity: 1; } 100% { transform: translate(var(--x), var(--y)) scale(0); opacity: 0; } }
+        #report-content table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+        #report-content th, #report-content td { border: 1px solid #e2e8f0; padding: 8px 12px; text-align: left; }
+        #report-content th { background-color: #f1f5f9; font-weight: 600; }
+        #report-content tr:nth-child(even) { background-color: #f8fafc; }
+    </style>
+</head>
+<body class="antialiased">
+    <div id="app">
+        <div id="loading-view" class="flex justify-center items-center h-screen dark-theme-body">
+            <div class="loader ease-linear rounded-full border-8 border-t-8 border-gray-700 h-32 w-32"></div>
+        </div>
+
+        <div id="login-view" class="hidden min-h-screen flex items-center justify-center p-4 dark-theme-body">
+            <div class="login-panel-container" id="container">
+                <div class="form-container guidelines-container">
+                    <div class="bg-[#17253d] h-full flex flex-col justify-center items-center px-8 text-center text-slate-300">
+                        <h2 class="text-2xl font-semibold text-white mb-6">System Guidelines</h2>
+                        <div class="space-y-4 text-left">
+                            <div class="flex items-start">
+                                <i data-lucide="at-sign" class="w-5 h-5 mr-3 mt-1 text-orange-400 flex-shrink-0"></i>
+                                <div><h3 class="font-semibold text-white">Official Email Only</h3><p class="text-sm text-slate-400">Please use your official email address to log in.</p></div>
+                            </div>
+                            <div class="flex items-start">
+                                <i data-lucide="building" class="w-5 h-5 mr-3 mt-1 text-orange-400 flex-shrink-0"></i>
+                                <div><h3 class="font-semibold text-white">Admin Responsibilities</h3><p class="text-sm text-slate-400">Manage teachers and records within your assigned school only.</p></div>
+                            </div>
+                            <div class="flex items-start">
+                                <i data-lucide="file-pen-line" class="w-5 h-5 mr-3 mt-1 text-orange-400 flex-shrink-0"></i>
+                                <div><h3 class="font-semibold text-white">Transparency</h3><p class="text-sm text-slate-400">All leave credit modifications must be accompanied by a valid reason.</p></div>
+                            </div>
+                        </div>
+                        <div class="mt-6 pt-4 border-t border-slate-600 w-full text-left">
+                            <a href="#" id="view-privacy-link" class="text-xs text-orange-400 hover:underline flex items-center"><i data-lucide="lock" class="w-3 h-3 mr-1"></i> Data Privacy & Liability Disclaimer</a>
+                        </div>
+                        <a href="#" id="mobile-login-link" class="md:hidden text-sm text-orange-400 hover:underline mt-4">Back to Login</a>
+                    </div>
+                </div>
+                <div class="form-container sign-in-container">
+                    <div class="bg-[#17253d] h-full flex flex-col justify-center items-center px-12 text-center">
+                        <img src="leaveledger.png" alt="LeaveLedger Logo" class="w-auto h-auto max-w-[180px] mx-auto mb-4">
+                        <h2 class="text-3xl font-bold text-white">Sign In</h2>
+                        <p class="text-sm text-slate-400 mt-1 mb-6">Please sign in to access your dashboard.</p>
+                        <input type="email" id="email" placeholder="Email Address" class="form-input w-full mb-3 px-4 py-2.5 text-sm rounded-lg">
+                        <div class="relative w-full">
+                            <input type="password" id="password" placeholder="Password" class="form-input w-full mb-3 pl-4 pr-10 py-2.5 text-sm rounded-lg">
+                            <div class="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer" onclick="togglePasswordVisibility()">
+                                <i id="eye-icon" data-lucide="eye" class="h-5 w-5 text-slate-400"></i>
+                            </div>
+                        </div>
+                        <button id="login-btn" class="animated-btn w-full bg-orange-600 text-white py-3 rounded-lg hover:bg-orange-700 transition font-semibold text-sm uppercase tracking-wider">Sign In</button>
+                        <a href="#" id="forgot-password-link" class="text-sm text-orange-400 hover:underline mt-4">Forgot Password?</a>
+                        <a href="#" id="mobile-guidelines-link" class="md:hidden text-sm text-orange-400 hover:underline mt-4">View System Guidelines</a>
+                    </div>
+                </div>
+                <div class="overlay-container">
+                    <div class="overlay">
+                        <div class="overlay-panel overlay-left">
+                            <h1 class="text-4xl font-bold text-white">Back to Login</h1>
+                            <p class="text-slate-200 mt-4 mb-8 text-md font-light leading-relaxed">If you are ready to sign in, click the button below.</p>
+                            <button class="ghost-btn" id="toggleLogin">Sign In</button>
+                        </div>
+                        <div class="overlay-panel overlay-right">
+                            <h1 class="text-4xl font-bold text-white">System Guidelines</h1>
+                            <p class="text-slate-200 mt-4 mb-8 text-md font-light leading-relaxed">Please read the system guidelines before proceeding.</p>
+                            <button class="ghost-btn" id="toggleGuidelines">View Guidelines</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="salary-deduction-modal" class="hidden fixed inset-0 overflow-auto modal-backdrop flex front-most">
+            <div class="relative p-6 bg-white w-full max-w-sm m-auto flex-col flex rounded-lg shadow-lg modal-content">
+                <div class="text-center">
+                    <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+                        <i data-lucide="alert-circle" class="h-6 w-6 text-red-600"></i>
+                    </div>
+                    <h2 class="text-lg font-semibold mb-2 text-slate-800">Salary Deduction Notice</h2>
+                    <p id="salary-deduction-message" class="text-sm text-slate-600 mb-6"></p>
+                </div>
+                <div class="flex space-x-3">
+                    <button onclick="closeModal('salary-deduction-modal')" class="w-1/2 bg-slate-200 text-slate-700 py-2 rounded-lg hover:bg-slate-300 text-sm font-semibold">Cancel</button>
+                    <button id="confirm-salary-deduction-btn" class="w-1/2 bg-orange-600 text-white py-2 rounded-lg hover:bg-orange-700 text-sm font-semibold">Agree & Proceed</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="manage-credits-modal" class="hidden fixed inset-0 overflow-auto modal-backdrop flex">
+            <div class="relative p-6 bg-white w-full max-w-md m-auto flex-col flex rounded-lg modal-content">
+                <h2 id="manage-credits-title" class="text-lg font-semibold mb-4">Manage Credits</h2>
+                <input type="hidden" id="manage-credits-teacher-id">
+                <input type="hidden" id="manage-credits-action">
+                <div class="space-y-3">
+                    <input type="number" id="credit-amount" min="0" placeholder="Number of credit(s)" class="w-full px-4 py-2 border rounded-lg text-sm">
+                    <select id="deduction-type" class="w-full px-4 py-2 border rounded-lg bg-white text-sm hidden">
+                        <option disabled selected value="">-- Select Deduction Type --</option>
+                        <option value="Sick leave">Sick leave</option>
+                        <option value="Maternity leave">Maternity leave</option>
+                        <option value="Paternity leave">Paternity leave</option>
+                        <option value="Personal leave">Personal leave</option>
+                        <option value="Others">Others</option>
+                    </select>
+                    <input type="text" id="credit-reason" placeholder="Please provide the reason" class="w-full px-4 py-2 border rounded-lg text-sm">
+                </div>
+                <p id="manage-credits-error" class="text-red-500 text-xs text-center mt-2 hidden"></p>
+                <div class="flex items-center justify-end space-x-2 mt-6">
+                    <button onclick="closeModal('manage-credits-modal')" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold py-2 px-4 rounded-lg text-sm" type="button">Cancel</button>
+                    <button id="save-credits-btn" class="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-4 rounded-lg text-sm" type="button">Update Credits</button>
+                </div>
+            </div>
+        </div>
+
+
+
+
+
+
+const salaryDeductionModal = document.getElementById('salary-deduction-modal');
+        const salaryDeductionMessage = document.getElementById('salary-deduction-message');
+        const confirmSalaryBtn = document.getElementById('confirm-salary-deduction-btn');
+
+        async function processCreditUpdate(teacherId, action, amount, reason, deductionType) {
+            const adminId = auth.currentUser.uid;
+            const teacherRef = ref(db, `users/${teacherId}`);
+            const adminSnapshot = await get(ref(db, `users/${adminId}`));
+            const adminName = adminSnapshot.val().name;
+
+            try {
+                const teacherSnapshot = await get(teacherRef);
+                if (!teacherSnapshot.exists()) throw new Error("Teacher not found");
+                
+                const userData = teacherSnapshot.val();
+                const currentCredits = userData.leaveCredits || 0;
+                let changeAmount = action === 'deduct' ? -amount : amount;
+                let potentialBalance = currentCredits + changeAmount;
+                let finalDisplayBalance = potentialBalance;
+                let salaryDeductionInfo = "";
+
+                if (action === 'deduct' && potentialBalance < 0) {
+                    const negativeAmount = Math.abs(potentialBalance);
+                    salaryDeductionInfo = ` (Salary Deduction: ${negativeAmount} day/s)`;
+                    finalDisplayBalance = 0; 
+                }
+
+                const updateBalance = async () => {
+                    await update(teacherRef, { leaveCredits: finalDisplayBalance });
+                    
+                    const historyRef = push(ref(db, `leaveHistory/${teacherId}`));
+                    await set(historyRef, {
+                        date: new Date().toISOString(),
+                        reason: reason + salaryDeductionInfo,
+                        change: changeAmount,
+                        newBalance: finalDisplayBalance,
+                        modifiedBy: adminName,
+                        ...(action === 'deduct' && { deductionType: deductionType })
+                    });
+
+                    const notificationRef = push(ref(db, `notifications/${teacherId}`));
+                    const message = action === 'add'
+                        ? `${amount} credit(s) added for: ${reason}`
+                        : `${amount} credit(s) deducted for: ${reason}${salaryDeductionInfo}`;
+
+                    await set(notificationRef, {
+                        message: message,
+                        timestamp: new Date().toISOString()
+                    });
+
+                    closeModal('manage-credits-modal');
+                    showAlert('Credits updated successfully.');
+                };
+
+                if (potentialBalance < 0) {
+                    salaryDeductionMessage.textContent = `The teacher's remaining credits are ${currentCredits}. Deducting ${amount} will result in -${Math.abs(potentialBalance)}. This negative balance will be deducted directly from the teacher's salary. Do you agree?`;
+                    openModal('salary-deduction-modal');
+
+                    const newConfirmBtn = confirmSalaryBtn.cloneNode(true);
+                    confirmSalaryBtn.parentNode.replaceChild(newConfirmBtn, confirmSalaryBtn);
+                    
+                    newConfirmBtn.addEventListener('click', async () => {
+                        closeModal('salary-deduction-modal');
+                        await updateBalance();
+                    });
+                } else {
+                    await updateBalance();
+                }
+
+            } catch (e) {
+                const errorEl = document.getElementById('manage-credits-error');
+                errorEl.textContent = e.message;
+                errorEl.classList.remove('hidden');
+            }
+        }
+
+        document.getElementById('save-credits-btn').addEventListener('click', () => {
+            const teacherId = document.getElementById('manage-credits-teacher-id').value;
+            const action = document.getElementById('manage-credits-action').value;
+            const reason = document.getElementById('credit-reason').value;
+            const amount = parseFloat(document.getElementById('credit-amount').value);
+            const deductionType = document.getElementById('deduction-type').value;
+
+            if (!reason || isNaN(amount) || amount <= 0) {
+                const errorEl = document.getElementById('manage-credits-error');
+                errorEl.textContent = 'Please provide a valid amount and reason.';
+                errorEl.classList.remove('hidden');
+                return;
+            }
+
+            processCreditUpdate(teacherId, action, amount, reason, deductionType);
+        });
+
+
+function loadAdminDashboard(adminId) {
+            const adminRef = ref(db, `users/${adminId}`);
+            onValue(adminRef, (snapshot) => {
+                const adminData = snapshot.val();
+                if (adminData && adminData.role === 'standard-admin') {
+                    const welcomeEl = document.getElementById('std-admin-welcome');
+                    welcomeEl.textContent = `Hello, ${adminData.name || 'Admin'}!`;
+                    loadTeacherList(adminData.schoolId);
+                }
+            });
+        }
+
+        function loadTeacherList(schoolId) {
+            const teacherListEl = document.getElementById('teacher-list');
+            const teachersRef = ref(db, 'users');
+            onValue(teachersRef, (snapshot) => {
+                teacherListEl.innerHTML = '';
+                snapshot.forEach((child) => {
+                    const user = child.val();
+                    if (user.role === 'teacher' && user.schoolId === schoolId) {
+                        const div = document.createElement('div');
+                        div.className = 'p-4 border rounded-lg bg-slate-50 flex justify-between items-center';
+                        div.innerHTML = `
+                            <div>
+                                <p class="font-bold">${user.name}</p>
+                                <p class="text-sm text-slate-500">Credits: ${user.leaveCredits || 0}</p>
+                            </div>
+                            <div class="space-x-2">
+                                <button onclick="openManageCreditsModal('${child.key}', 'add')" class="text-green-600 hover:underline">Add</button>
+                                <button onclick="openManageCreditsModal('${child.key}', 'deduct')" class="text-red-600 hover:underline">Deduct</button>
+                            </div>
+                        `;
+                        teacherListEl.appendChild(div);
+                    }
+                });
+            });
+        }
+
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.remove('hidden');
+        }
+
+        window.closeModal = function(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        };
+
+        function showAlert(message) {
+            const alertModal = document.getElementById('alert-modal');
+            document.getElementById('alert-message').textContent = message;
+            openModal('alert-modal');
+        }
+
+        document.getElementById('alert-ok-btn').addEventListener('click', () => {
+            closeModal('alert-modal');
+        });
+
+        function togglePasswordVisibility() {
+            const passInput = document.getElementById('password');
+            const eyeIcon = document.getElementById('eye-icon');
+            if (passInput.type === 'password') {
+                passInput.type = 'text';
+                eyeIcon.setAttribute('data-lucide', 'eye-off');
+            } else {
+                passInput.type = 'password';
+                eyeIcon.setAttribute('data-lucide', 'eye');
+            }
+            lucide.createIcons();
+        }
+
+        window.openManageCreditsModal = function(teacherId, action) {
+            document.getElementById('manage-credits-teacher-id').value = teacherId;
+            document.getElementById('manage-credits-action').value = action;
+            document.getElementById('manage-credits-title').textContent = action === 'add' ? 'Add Credits' : 'Deduct Credits';
+            
+            const deductionSelect = document.getElementById('deduction-type');
+            if (action === 'deduct') {
+                deductionSelect.classList.remove('hidden');
+            } else {
+                deductionSelect.classList.add('hidden');
+            }
+            
+            openModal('manage-credits-modal');
+        };
+
+        onAuthStateChanged(auth, (user) => {
+            const loadingView = document.getElementById('loading-view');
+            const loginView = document.getElementById('login-view');
+            const standardAdminView = document.getElementById('standard-admin-view');
+
+            if (user) {
+                loadingView.classList.add('hidden');
+                loginView.classList.add('hidden');
+                standardAdminView.classList.remove('hidden');
+                loadAdminDashboard(user.uid);
+            } else {
+                loadingView.classList.add('hidden');
+                loginView.classList.remove('hidden');
+                standardAdminView.classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
